@@ -4,6 +4,10 @@ ESP32-based status display for various server metrics forked from  [phlntn/IntnA
 
 ![](banner.jpg)
 
+Adds support for the following:
+- Multiple Proxmox Nodes
+- Proxmox Memory monitoring
+
 Implements reading the following sensors:
 - CPU temperature via a very rudimentary IPMI client implemention
 - Proxmox CPU usage via its HTTP API
