@@ -1,6 +1,6 @@
 # Arduino Homelab Display
 
-ESP32-based status display for various server metrics.
+ESP32-based status display for various server metrics forked from  [phlntn/IntnArduino_HomelabDisplay](https://github.com/phlntn/Arduino_HomelabDisplay)
 
 ![](banner.jpg)
 
