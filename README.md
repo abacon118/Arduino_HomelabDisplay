@@ -39,6 +39,8 @@ This is a personal project that is only tested with the hardware/software listed
 2. Copy `Secrets.example.h` to `Secrets.h` and configure
 3. Compile and upload code to ESP32
 
+## Code Documentation (in progress)
+https://learn.adafruit.com/adafruit-gfx-graphics-library/using-fonts
 
 ## Acknowledgments
 
