@@ -1,12 +1,15 @@
-# Arduino Homelab Display
+# Arduino Homelab Display V2.0
 
 ESP32-based status display for various server metrics forked from  [phlntn/IntnArduino_HomelabDisplay](https://github.com/phlntn/Arduino_HomelabDisplay)
-
-![](banner.jpg)
 
 Adds support for the following:
 - Multiple Proxmox Nodes
 - Proxmox Memory monitoring
+
+
+
+
+![](banner.jpg)
 
 Implements reading the following sensors:
 - CPU temperature via a very rudimentary IPMI client implemention
@@ -42,9 +45,6 @@ This is a personal project that is only tested with the hardware/software listed
    - ArduinoJson (not Arduino_JSON)
 2. Copy `Secrets.example.h` to `Secrets.h` and configure
 3. Compile and upload code to ESP32
-
-## Code Documentation (in progress)
-https://learn.adafruit.com/adafruit-gfx-graphics-library/using-fonts
 
 ## Acknowledgments
 
