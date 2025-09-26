@@ -1,9 +1,12 @@
 /*
  * Arduino Homelab Display
- * 
+ * Original Repository: https://github.com/phlntn/Arduino_HomelabDisplay
  * Main controller for an OLED display showing real-time server metrics.
  * Monitors CPU usage, temperature, disk usage, and UPS power consumption
  * through various protocols (SNMP, IPMI, HTTP).
+
+ * V2 Andrew Bowman 2025
+ * Added multiple Proxmox Nodes
  */
 
 #include <Wire.h>
@@ -11,11 +14,11 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1327.h>
-
+#include <Adafruit_SH110X.h> 
 #include "Secrets.h"
 #include "FontWide8.h"
 #include "FontCond16.h"
+#include <Fonts/FreeSans9pt7b.h>
 
 WiFiUDP udp;
 
@@ -23,17 +26,19 @@ WiFiUDP udp;
 const int SCREEN_WIDTH = 128;
 const int SCREEN_HEIGHT = SCREEN_WIDTH;
 const int I2C_SPEED = 1000000;
-Adafruit_SSD1327 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire1, -1, I2C_SPEED);
+Adafruit_SH1107 display = Adafruit_SH1107(128, 128, &Wire); // width, height.
 
 // Layout configuration
 const int CELL_GAP = 10;
 const int CELL_WIDTH = round((SCREEN_WIDTH - CELL_GAP) / 2);
-const int CELL_HEIGHT = CELL_WIDTH;
+const int CELL_HEIGHT = 42;
 
 // Sensor configuration
 const int NUM_SENSORS = 4;
 const int REFRESH_INTERVAL = 10000;
 const int VALIDITY_DURATION = REFRESH_INTERVAL * 3;
+
+#define NUM_PVE_HOSTS 2
 
 struct SensorData {
     float value;
@@ -42,16 +47,40 @@ struct SensorData {
     const char* id;
     const char* label;
     const char* unit;
+    int host;
     int gridX;
     int gridY;
 };
 
-SensorData sensors[NUM_SENSORS] = {
-    {0.0, -99999999, false, "cpu",  "CPU",  "%", 0, 0},
-    {0.0, -99999999, false, "temp", "TEMP", "C", 1, 0},
-    {0.0, -99999999, false, "disk", "DISK", "%", 0, 1},
-    {0.0, -99999999, false, "ups",  "UPS",  "W", 1, 1}
+struct ProxmoxHosts {
+    // Proxmox
+    int host;
+    const char* PROXMOX_ADDR;
+    const char* PROXMOX_NODE;
+    const char* PROXMOX_TOKEN_ID;
+    const char* PROXMOX_TOKEN_SECRET;
+
 };
+
+struct ProxmoxSensor {
+    int host;
+    SensorData sensor;
+    ProxmoxHosts proxmox;
+};
+
+
+ProxmoxHosts proxmoxHosts[NUM_PVE_HOSTS] = {
+    {0,PROXMOX_ADDR0,PROXMOX_NODE0,PROXMOX_TOKEN_ID0,PROXMOX_TOKEN_SECRET0},
+    {1,PROXMOX_ADDR0,PROXMOX_NODE1,PROXMOX_TOKEN_ID0,PROXMOX_TOKEN_SECRET0}
+};
+
+SensorData sensors[NUM_SENSORS] = {
+    {0.0, ULONG_MAX, false, "cpu",  "CPU2",  "%", 0, 0, 0},
+    {0.0, ULONG_MAX, false, "mem", "MEMORY2", "%", 0, 1, 0} ,
+    {0.0, ULONG_MAX, false, "cpu", "CPU4", "%", 1, 0, 1},
+    {0.0, ULONG_MAX, false, "mem",  "MEM4",  "%", 1, 1, 1}
+};
+
 
 /*
  * Setup Functions
@@ -70,19 +99,19 @@ void drawSpinner() {
         int y = round(centerY + sin(angle) * radius);
         
         // Calculate brightness based on phase
-        int brightness = (phase - i) % 8;
-        brightness = 15 - (brightness * 2);
-        if (brightness > 0) {
-            display.fillCircle(x, y, 2, brightness);
-        }
+       // int brightness = (phase - i) % 8;
+        //brightness = 15 - (brightness * 2);
+        //if (brightness > 0) {
+            display.fillCircle(x, y, 2, SH110X_WHITE);
+        //}
     }
 }
 
 void initializeDisplay() {
-    Wire1.begin();
-    Wire1.setClock(I2C_SPEED);
+    Wire.begin(8,9);
+    Wire.setClock(I2C_SPEED);
     
-    if (!display.begin(0x3D)) {
+    if (!display.begin(0x3C)) {
         Serial.println("OLED initialization failed!");
     }
     
@@ -94,6 +123,8 @@ void initializeDisplay() {
 
 void connectToWiFi() {
     Serial.printf("Connecting to WiFi network: %s\n", WIFI_SSID);
+    Serial.println(WIFI_PASS);
+
     WiFi.begin(WIFI_SSID, WIFI_PASS);
     
     display.clearDisplay();
@@ -123,6 +154,7 @@ void setup() {
 
     ArduinoOTA.setPassword(OTA_PASS);
     ArduinoOTA.begin();
+
 }
 
 /*
@@ -137,6 +169,9 @@ void updateSensorIfStale(SensorData& sensor) {
         }
         else if (sensor.id == "cpu") {
             updateHTTPCPUUsage(sensor);
+        }
+        else if (sensor.id == "mem") {
+            updateHTTPMEMUsage(sensor);
         }
         else if (sensor.id == "ups") {
             updateSNMPUPSPower(sensor);
@@ -157,30 +192,32 @@ void updateAllSensors() {
 void updateDisplay() {
     display.clearDisplay();
     unsigned long now = millis();
-    
+
     for (int i = 0; i < NUM_SENSORS; i++) {
+        int row = sensors[i].gridY;
+           
         // Calculate grid position
         int x = round(sensors[i].gridX * (CELL_WIDTH + CELL_GAP));
-        int y = round(sensors[i].gridY * (CELL_HEIGHT + CELL_GAP));
+        int y = round(sensors[i].gridY * (CELL_HEIGHT + CELL_GAP)) + (64-CELL_HEIGHT);
         
         // Draw cell background
         display.fillRoundRect(x, y, CELL_WIDTH, CELL_HEIGHT, 7, 5);
         
         // Draw sensor label
         display.setFont(&FontWide8);
-        display.setTextColor(SSD1327_WHITE);
+        display.setTextColor(SH110X_WHITE);
         display.setCursor(x + 5, y + 16);
         display.println(sensors[i].label);
         
         // Draw separator line
-        int separatorY = y + 23;
-        display.drawLine(x, separatorY, x + CELL_WIDTH, separatorY, 0);
-        display.drawLine(x, separatorY + 1, x + CELL_WIDTH, separatorY + 1, 0);
+        int separatorY = y + 20;
+        display.drawLine(x, separatorY, x + CELL_WIDTH, separatorY, SH110X_WHITE);
+        display.drawLine(x, separatorY + 1, x + CELL_WIDTH, separatorY + 1, SH110X_WHITE);
         
         // Draw sensor value
         display.setFont(&FontCond16);
-        display.setTextColor(SSD1327_WHITE);
-        display.setCursor(x + 5, y + 50);
+        display.setTextColor(SH110X_WHITE);
+        display.setCursor(x + 5, y + 40);
         char valueStr[6] = "-";
         if (sensors[i].isValid && (now - sensors[i].lastUpdate < VALIDITY_DURATION)) {
             float displayValue = sensors[i].value;
@@ -188,7 +225,21 @@ void updateDisplay() {
         }
         display.println(valueStr);
     }
+    display.drawLine(0, 63, 128, 63, SH110X_WHITE);
+    display.drawLine(0, 65, 128, 65, SH110X_WHITE);
     
+    //Display Node Name
+    for(int i = 0; i <2; i++){
+        display.setFont(&FreeSans9pt7b); // Use the same font as sensor labels
+        display.setTextColor(SH110X_WHITE);
+        // Estimate width: FontWide8 is ~6 pixels per character
+        int textWidth = strlen(nodeNames[i]) * 7;
+        int centeredX = (SCREEN_WIDTH - textWidth) / 2;
+        int centeredY = i*(SCREEN_HEIGHT/2)+16; // Top of screen, or adjust as needed
+
+        display.setCursor(centeredX, centeredY);
+        display.println(nodeNames[i]); }
+
     display.display();
 }
 
