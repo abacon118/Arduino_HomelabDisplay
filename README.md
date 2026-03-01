@@ -25,6 +25,7 @@ Additional functionality:
 2. POE module (optional)
 3. TCA9548A I2C Multiplexer
 4. SH1106 (as many as you want)
+5. Light Dependant Resistor and 150k Ohm Resistor (optional)
 
 
 ## Setup
