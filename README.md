@@ -1,8 +1,6 @@
-# Arduino Homelab Display
+# Arduino Homelab Display V2
 
-ESP32-based status display for various server metrics.
-
-![](banner.jpg)
+ESP32-based status display for various server metrics forked from [phlntn](https://github.com/phlntn/Arduino_HomelabDisplay)
 
 Implements reading the following sensors:
 - CPU temperature via a very rudimentary IPMI client implemention
@@ -10,23 +8,19 @@ Implements reading the following sensors:
 - TrueNAS disk usage via SNMP
 - UPS power draw via SNMP
 - CPU usage via SNMP (unused by default)
+- Temperature, CPU, Memory usage via Flask API
 
 Additional functionality:
 - Web interface for remote viewing or embedding of current sensor values
 - Over-the-air firmware updates via ArduinoOTA
 
-This is a personal project that is only tested with the hardware/software listed below — it is not a general-purpose application. Please create a fork if you'd like to extend the code.
-- ASRock Rack D2163D4I2-2T
-- Proxmox 8.3
-- TrueNAS Scale 24.10
-- Eaton 5P 1500 RC with Gigabit Network Card
-
 
 ## Parts
 
-- [Adafruit QT Py ESP32 Pico](https://www.adafruit.com/product/5395)
-- [Adafruit Grayscale 1.5" 128x128 OLED](https://www.adafruit.com/product/4741)
-- [Adafruit STEMMA 4-Pin Cable](https://www.adafruit.com/product/4399)
+1. WT-ETH01 ESP32 Ethernet
+2. POE module (optional)
+3. TCA9548A I2C Multiplexer
+4. SH1106 (as many as you want)
 
 
 ## Setup
@@ -36,11 +30,12 @@ This is a personal project that is only tested with the hardware/software listed
    - Adafruit SSD1327
    - SNMP Manager
    - ArduinoJson (not Arduino_JSON)
-2. Copy `Secrets.example.h` to `Secrets.h` and configure
+   - U8g2lib
+2. Update secrets.h and configure
 3. Compile and upload code to ESP32
 
 
 ## Acknowledgments
 
 - Custom fonts created with [GFX Font Editor](https://github.com/ScottFerg56/GFXFontEditor)
-- Partially developed with Anthropic Claude
+- Partially developed with Anthropic Claude and Copilot
