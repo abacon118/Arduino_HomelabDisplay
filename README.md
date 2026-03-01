@@ -38,6 +38,10 @@ Additional functionality:
    - U8g2lib
 2. Update secrets.h and configure
 3. Compile and upload code to ESP32
+      Note: When uploading to the WT-ETH01 IO0 must be grounded when connecting the programmer.
+
+## PCB
+![PCB](images/pcb.png)
 
 
 ## Acknowledgments
