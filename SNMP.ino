@@ -12,7 +12,7 @@
 #include "Secrets.h"
 
 // SNMP configuration
-SNMPManager snmp = SNMPManager("public");
+SNMPManager snmp = SNMPManager("SNMPCommunity");
 const uint16_t SNMP_PORT = 161;
 
 // SNMP callbacks and requests
@@ -57,13 +57,13 @@ void initializeSNMP() {
     snmp.setUDP(&udp);
     snmp.begin();
 
-    callbackUPSPower  = snmp.addIntegerHandler  (SNMP_ADDR_UPS,     OID_UPS_POWER,  &upsResponse);
-    callbackDiskUsed  = snmp.addCounter64Handler(SNMP_ADDR_TRUENAS, OID_DISK_USED,  &diskUsedResponse);
-    callbackDiskAvail = snmp.addCounter64Handler(SNMP_ADDR_TRUENAS, OID_DISK_AVAIL, &diskAvailResponse);
-    callbackCpuUser   = snmp.addCounter32Handler(SNMP_ADDR_TRUENAS, OID_CPU_USER,   &cpuUserResponse);
-    callbackCpuNice   = snmp.addCounter32Handler(SNMP_ADDR_TRUENAS, OID_CPU_NICE,   &cpuNiceResponse);
-    callbackCpuSystem = snmp.addCounter32Handler(SNMP_ADDR_TRUENAS, OID_CPU_SYSTEM, &cpuSystemResponse);
-    callbackCpuIdle   = snmp.addCounter32Handler(SNMP_ADDR_TRUENAS, OID_CPU_IDLE,   &cpuIdleResponse);
+    callbackUPSPower  = snmp.addIntegerHandler  (SNMP_ADDR_OctoPi,     OID_UPS_POWER,  &upsResponse);
+    callbackDiskUsed  = snmp.addCounter64Handler(SNMP_ADDR_OctoPi, OID_DISK_USED,  &diskUsedResponse);
+    callbackDiskAvail = snmp.addCounter64Handler(SNMP_ADDR_OctoPi, OID_DISK_AVAIL, &diskAvailResponse);
+    callbackCpuUser   = snmp.addCounter32Handler(SNMP_ADDR_OctoPi, OID_CPU_USER,   &cpuUserResponse);
+    callbackCpuNice   = snmp.addCounter32Handler(SNMP_ADDR_OctoPi, OID_CPU_NICE,   &cpuNiceResponse);
+    callbackCpuSystem = snmp.addCounter32Handler(SNMP_ADDR_OctoPi, OID_CPU_SYSTEM, &cpuSystemResponse);
+    callbackCpuIdle   = snmp.addCounter32Handler(SNMP_ADDR_OctoPi, OID_CPU_IDLE,   &cpuIdleResponse);
 }
 
 /*
@@ -71,12 +71,12 @@ void initializeSNMP() {
  */
 
 void getSNMPUPSData() {
-    snmpRequest.setIP(WiFi.localIP());
+    snmpRequest.setIP(ETH.localIP());
     snmpRequest.setUDP(&udp);
 
     snmpRequest.setRequestID(random(9999));
     snmpRequest.addOIDPointer(callbackUPSPower);
-    snmpRequest.sendTo(SNMP_ADDR_UPS);
+    snmpRequest.sendTo(SNMP_ADDR_OctoPi);
 
     delay(100);
     snmp.loop();
@@ -84,13 +84,13 @@ void getSNMPUPSData() {
 }
 
 void getSNMPDiskData() {
-    snmpRequest.setIP(WiFi.localIP());
+    snmpRequest.setIP(ETH.localIP());
     snmpRequest.setUDP(&udp);
     snmpRequest.setRequestID(random(9999));
 
     snmpRequest.addOIDPointer(callbackDiskUsed);
     snmpRequest.addOIDPointer(callbackDiskAvail);
-    snmpRequest.sendTo(SNMP_ADDR_TRUENAS);
+    snmpRequest.sendTo(SNMP_ADDR_OctoPi);
 
     delay(100);
     snmp.loop();
@@ -98,7 +98,7 @@ void getSNMPDiskData() {
 }
 
 void getSNMPCPUData() {
-    snmpRequest.setIP(WiFi.localIP());
+    snmpRequest.setIP(ETH.localIP());
     snmpRequest.setUDP(&udp);
     snmpRequest.setRequestID(random(9999));
 
@@ -106,7 +106,7 @@ void getSNMPCPUData() {
     snmpRequest.addOIDPointer(callbackCpuNice);
     snmpRequest.addOIDPointer(callbackCpuSystem);
     snmpRequest.addOIDPointer(callbackCpuIdle);
-    snmpRequest.sendTo(SNMP_ADDR_TRUENAS);
+    snmpRequest.sendTo(SNMP_ADDR_OctoPi);
 
     delay(100);
     snmp.loop();

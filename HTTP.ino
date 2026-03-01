@@ -15,17 +15,17 @@
 void updateHTTPCPUUsage(SensorData& sensor) {
     HTTPClient http;
     float cpuUsage = 9999.0;
-    ProxmoxHosts hostConfig = proxmoxHosts[sensor.host];
+    APIHosts hostConfig = hosts[sensor.host];
 
     // Construct API URL for Proxmox node status
-    String url = "https://" + String(hostConfig.PROXMOX_ADDR) + "/api2/json/nodes/" + String(hostConfig.PROXMOX_NODE) + "/status";
+    String url = "https://" + String(hostConfig.ADDR) + "/api2/json/nodes/" + String(hostConfig.PROXMOX_NODE) + "/status";
     Serial.println(url);
     http.begin(url);
     http.setUserAgent("HomelabDisplay/1.0");
     Serial.println(http.getString());
 
     // Set up authentication header with API token
-    String authHeader = "PVEAPIToken=" + String(hostConfig.PROXMOX_TOKEN_ID) + "=" + String(hostConfig.PROXMOX_TOKEN_SECRET);
+    String authHeader = "PVEAPIToken=" + String(hostConfig.PROXMOX_TOKEN_ID) + "=" + String(hostConfig.TOKEN_SECRET);
     Serial.println(authHeader);
     http.addHeader("Authorization", authHeader);
     
@@ -59,15 +59,15 @@ void updateHTTPCPUUsage(SensorData& sensor) {
 }
 void updateHTTPMEMUsage(SensorData& sensor) {
     HTTPClient http;
-    ProxmoxHosts memHostConfig = proxmoxHosts[sensor.host];
+    APIHosts memHostConfig = hosts[sensor.host];
 
-    String url = "https://" + String(memHostConfig.PROXMOX_ADDR) + "/api2/json/nodes/" + String(memHostConfig.PROXMOX_NODE) + "/status";
+    String url = "https://" + String(memHostConfig.ADDR) + "/api2/json/nodes/" + String(memHostConfig.PROXMOX_NODE) + "/status";
     Serial.println("Requesting: " + url);
 
     http.begin(url);
     http.setUserAgent("HomelabDisplay/1.0");
 
-    String authHeader = "PVEAPIToken=" + String(memHostConfig.PROXMOX_TOKEN_ID) + "=" + String(memHostConfig.PROXMOX_TOKEN_SECRET);
+    String authHeader = "PVEAPIToken=" + String(memHostConfig.PROXMOX_TOKEN_ID) + "=" + String(memHostConfig.TOKEN_SECRET);
     http.addHeader("Authorization", authHeader);
 
     int httpResponseCode = http.GET();
@@ -92,6 +92,62 @@ void updateHTTPMEMUsage(SensorData& sensor) {
             Serial.printf("Total Memory: %.2f GB\n", totalMemory / pow(1024, 3));
             Serial.printf("Used Memory : %.2f GB\n", usedMemory / pow(1024, 3));
             Serial.printf("Usage       : %.2f %%\n", usagePercent);
+        } else {
+            Serial.println("JSON parsing failed");
+            sensor.isValid = false;
+        }
+    } else {
+        Serial.printf("HTTP Error: %d\n", httpResponseCode);
+        sensor.isValid = false;
+    }
+
+    http.end();
+}
+
+void updateHTTPFlaskUsage(SensorData& sensor) {
+    HTTPClient http;
+    APIHosts flaskHostConfig = hosts[sensor.host];
+
+    String url = "http://" + String(flaskHostConfig.ADDR) + "/metrics?key=" + String(flaskHostConfig.TOKEN_SECRET);
+    Serial.println("Requesting: " + url);
+
+    http.begin(url);
+    http.setUserAgent("HomelabDisplay/1.0");
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode == 200) {
+        String payload = http.getString();
+        Serial.println("Payload: " + payload);
+
+        DynamicJsonDocument doc(8192);
+        DeserializationError error = deserializeJson(doc, payload);
+
+        if (!error) {
+            float cpuUsage   = doc["cpu"].as<float>();
+            float memUsage   = doc["memory"].as<float>();
+            float tempCelsius = doc["temp"].as<float>();
+
+            if (sensor.id == "FlaskCPU") {
+                sensor.value = cpuUsage;
+            } else if (sensor.id == "FlaskMEM") {
+                sensor.value = memUsage;
+            } else if (sensor.id == "FlaskTEMP") {
+                sensor.value = tempCelsius;
+            } else {
+                Serial.println("Unknown sensor.id, no value assigned");
+                sensor.isValid = false;
+                http.end();
+                return;
+            }
+
+            Serial.printf("CPU Usage   : %.2f %%\n", cpuUsage);
+            Serial.printf("Memory Usage: %.2f %%\n", memUsage);
+            Serial.printf("Temperature : %.2f °C\n", tempCelsius);
+            //Serial.printf("sensor.id=%s -> sensor.value=%.2f\n", sensor.id.c_str(), sensor.value);
+
+            sensor.lastUpdate = millis();
+            sensor.isValid = true;
+
         } else {
             Serial.println("JSON parsing failed");
             sensor.isValid = false;
