@@ -2,6 +2,8 @@
 
 ESP32-based status display for various server metrics forked from [phlntn](https://github.com/phlntn/Arduino_HomelabDisplay)
 
+![](images/WTETH32-SH1106.jpg)
+
 Implements reading the following sensors:
 - Temperature, CPU, Memory usage via Flask API
 - CPU temperature via a very rudimentary IPMI client implemention
