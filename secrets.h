@@ -33,14 +33,15 @@ const char* PROXMOX_TOKEN_SECRET0 = "secret";
 const char* PROXMOX_NODE1 = "pve1";
 
 const char* PI0_ADDR = "192.168.0.9:2002";
-const char* PI0_API ="apikey";
+const char* PI0_API ="randomstring";
 const char* PI0_Name = "OctoPi";
 
 const char* PI1_ADDR = "192.168.0.10:2002";
-const char* PI1_API = "apikey";
+const char* PI1_API = "randomstring";
 const char* PI1_Name = "Pi1";
 
 
 const char* nodeNames[4] = {  //For screen labels
     PROXMOX_NODE0,PROXMOX_NODE1, PI1_Name, PI0_Name   
 };
+
