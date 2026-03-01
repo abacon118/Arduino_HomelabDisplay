@@ -4,7 +4,7 @@ ESP32-based status display for various server metrics forked from [phlntn](https
 
 ![](images/WTETH32-SH1106.jpg)
 
-Implements reading the following sensors:
+###Implements reading the following sensors:
 - Temperature, CPU, Memory usage via Flask API
 - CPU temperature via a very rudimentary IPMI client implemention
 - Proxmox CPU usage via its HTTP API
@@ -13,7 +13,7 @@ Implements reading the following sensors:
 - CPU usage via SNMP (unused by default)
 
 
-Additional functionality:
+###Additional functionality:
 - Support for multiple SH1106 displays using a TCA9548A I2C Multiplexer
 - Web interface for remote viewing or embedding of current sensor values
 - Over-the-air firmware updates via ArduinoOTA
