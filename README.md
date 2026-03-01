@@ -39,3 +39,4 @@ Additional functionality:
 
 - Custom fonts created with [GFX Font Editor](https://github.com/ScottFerg56/GFXFontEditor)
 - Partially developed with Anthropic Claude and Copilot
+- Forked from [phlntn](https://github.com/phlntn/Arduino_HomelabDisplay)
