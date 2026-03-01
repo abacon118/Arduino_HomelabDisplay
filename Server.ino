@@ -32,27 +32,26 @@ String getStatusPage() {
         }
         .grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             height: 100%;
         }
         .card {
             background: white;
             border-radius: 10px;
-            aspect-ratio: 1;
             display: flex;
             flex-direction: column;
             background: rgba(255, 255, 255, 0.05);
         }
         .label {
-            font-size: 1.4em;
+            font-size: 1em;
             letter-spacing: 0.1em;
             padding: 17px 20px 13px;
             margin-bottom: 10px;
             border-bottom: solid 5px #25262b;
         }
         .row {
-            padding: 5px 20px;
+            padding: 5px 5px;
         }
         .value {
             font-size: 3em;
@@ -73,9 +72,9 @@ String getStatusPage() {
     // Generate sensor cards
     for (int i = 0; i < NUM_SENSORS; i++) {
         html += "<div class='card'>";
-            html += "<div class='label'>" + String(sensors[i].label) + "</div>";
+            html += "<div class='label'>" + String(nodeNames[sensors[i].host]) + "-" +  String(sensors[i].label) + "</div>";
             html += "<div class='row" + String(sensors[i].isValid ? "" : " invalid") + "' " 
-                  + "id='" + String(sensors[i].id) + "-row'>";
+                  + "id='" +  String(sensors[i].id) + "-row'>";
                 html += "<span class='value' id='" + String(sensors[i].id) + "-value'>";
                     html += sensors[i].isValid ? String(int(sensors[i].value)) : "-";
                 html += "</span>";
